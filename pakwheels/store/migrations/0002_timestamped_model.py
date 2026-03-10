@@ -86,8 +86,8 @@ class Migration(migrations.Migration):
             name="created_at",
         ),
         migrations.AlterModelOptions(
-            model_name="product",
-            options={"ordering": ["-created"]},
+            "product",
+            {"ordering": ["-created"]},
         ),
         migrations.AddIndex(
             model_name="product",
