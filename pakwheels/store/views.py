@@ -11,7 +11,7 @@ from .forms import ProductForm
 def product_list_view(request):
     """
     List active products with search, category/price/condition filters,
-    sorting, and pagination. Uses select_related for seller/category.
+    sorting, and pagination.
     """
     products =Product.objects.all()
 
