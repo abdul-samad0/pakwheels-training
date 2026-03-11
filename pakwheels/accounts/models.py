@@ -16,9 +16,7 @@ class User(AbstractUser):
 
 class Profile(TimeStampedModel):
     location = models.CharField(max_length=100, blank=True)
-    profile_picture = models.ImageField(
-        upload_to="profiles/", blank=True, null=True)
-
+    city = models.CharField(max_length=100, blank=True)
     user = models.OneToOneField(User, on_delete=models.CASCADE)
 
     def __str__(self):
@@ -28,8 +26,9 @@ class Profile(TimeStampedModel):
 class ProfileImage(TimeStampedModel):
     image = models.ImageField(
         upload_to="profile_images/", blank=True, null=True)
-
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    profile = models.OneToOneField(
+        Profile, on_delete=models.CASCADE, related_name="image", null=True, blank=True
+    )
 
     def __str__(self):
-        return f"{self.user.email} Profile Image"
+        return f"{self.profile.user.email} Profile Image"
