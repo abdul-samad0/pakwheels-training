@@ -1,8 +1,12 @@
-{% extends "accounts/base_accounts.html" %}
-{% block title %}Dashboard{% endblock %}
-{% block content %}
-  <h1>Dashboard (testing)</h1>
-  <p>Logged in as <strong>{{ user.username }}</strong> ({{ user.email }}).</p>
-  <p><em>Placeholder page for testing @login_required and request.user. Replace with real functionality later.</em></p>
-  <p><a href="{% url 'logout' %}">Log out</a></p>
+{% extends "accounts/base_accounts.html" %} {% block title %}Dashboard{%
+endblock %} {% block content %}
+<h1>Dashboard (testing)</h1>
+<p>Logged in as <strong>{{ user.username }}</strong> ({{ user.email }}).</p>
+<p>
+  <em
+    >Placeholder page for testing @login_required and request.user. Replace with
+    real functionality later.</em
+  >
+</p>
+<p><a href="{% url 'logout' %}">Log out</a></p>
 {% endblock %}

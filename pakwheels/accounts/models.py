@@ -16,9 +16,6 @@ class User(AbstractUser):
 
 class Profile(TimeStampedModel):
     location = models.CharField(max_length=100, blank=True)
-    profile_picture = models.ImageField(
-        upload_to="profiles/", blank=True, null=True)
-
     user = models.OneToOneField(User, on_delete=models.CASCADE)
 
     def __str__(self):
