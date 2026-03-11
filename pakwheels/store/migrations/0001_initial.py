@@ -102,7 +102,7 @@ class Migration(migrations.Migration):
                 ('import_year', models.PositiveSmallIntegerField(blank=True, null=True)),
                 ('slug', models.SlugField(unique=True)),
                 ('description', models.TextField()),
-                ('category', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='products', to='store.category')),
+                ('category', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='products', to='store.category')),
                 ('make', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='products', to='store.make')),
                 ('model', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='products', to='store.carmodel')),
                 ('seller', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='products', to=settings.AUTH_USER_MODEL)),

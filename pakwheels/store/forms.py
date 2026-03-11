@@ -13,7 +13,3 @@ class ProductForm(forms.ModelForm):
             "description": forms.Textarea(attrs={"rows": 4}),
             "category": forms.Select(attrs={"class": "form-select"}),
         }
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.fields["category"].required = False
