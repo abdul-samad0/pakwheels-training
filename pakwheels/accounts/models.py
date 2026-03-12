@@ -24,10 +24,9 @@ class Profile(TimeStampedModel):
 
 
 class ProfileImage(TimeStampedModel):
-    image = models.ImageField(
-        upload_to="profile_images/", blank=True, null=True)
+    image = models.ImageField(upload_to="profile_images/")
     profile = models.OneToOneField(
-        Profile, on_delete=models.CASCADE, related_name="image", null=True, blank=True
+        Profile, on_delete=models.CASCADE, related_name="image"
     )
 
     def __str__(self):

@@ -30,20 +30,6 @@ class Migration(migrations.Migration):
             },
         ),
         migrations.CreateModel(
-            name='Make',
-            fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('created', django_extensions.db.fields.CreationDateTimeField(auto_now_add=True, verbose_name='created')),
-                ('modified', django_extensions.db.fields.ModificationDateTimeField(auto_now=True, verbose_name='modified')),
-                ('name', models.CharField(max_length=100, unique=True)),
-                ('slug', models.SlugField(unique=True)),
-            ],
-            options={
-                'get_latest_by': 'modified',
-                'abstract': False,
-            },
-        ),
-        migrations.CreateModel(
             name='Category',
             fields=[
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
@@ -64,12 +50,13 @@ class Migration(migrations.Migration):
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('created', django_extensions.db.fields.CreationDateTimeField(auto_now_add=True, verbose_name='created')),
                 ('modified', django_extensions.db.fields.ModificationDateTimeField(auto_now=True, verbose_name='modified')),
+                ('make', models.CharField(max_length=100)),
                 ('name', models.CharField(max_length=100)),
-                ('slug', models.SlugField()),
-                ('make', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='models', to='store.make')),
+                ('variant', models.CharField(blank=True, max_length=120)),
+                ('slug', models.SlugField(unique=True)),
             ],
             options={
-                'unique_together': {('make', 'slug')},
+                'unique_together': {('make', 'name', 'variant')},
             },
         ),
         migrations.CreateModel(
@@ -102,8 +89,7 @@ class Migration(migrations.Migration):
                 ('import_year', models.PositiveSmallIntegerField(blank=True, null=True)),
                 ('slug', models.SlugField(unique=True)),
                 ('description', models.TextField()),
-                ('category', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='products', to='store.category')),
-                ('make', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='products', to='store.make')),
+                ('category', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='products', to='store.category')),
                 ('model', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='products', to='store.carmodel')),
                 ('seller', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='products', to=settings.AUTH_USER_MODEL)),
             ],
@@ -124,26 +110,6 @@ class Migration(migrations.Migration):
                 'get_latest_by': 'modified',
                 'abstract': False,
             },
-        ),
-        migrations.CreateModel(
-            name='Variant',
-            fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('created', django_extensions.db.fields.CreationDateTimeField(auto_now_add=True, verbose_name='created')),
-                ('modified', django_extensions.db.fields.ModificationDateTimeField(auto_now=True, verbose_name='modified')),
-                ('name', models.CharField(max_length=120)),
-                ('generation', models.CharField(blank=True, max_length=120)),
-                ('slug', models.SlugField()),
-                ('model', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='variants', to='store.carmodel')),
-            ],
-            options={
-                'unique_together': {('model', 'slug')},
-            },
-        ),
-        migrations.AddField(
-            model_name='product',
-            name='variant',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='products', to='store.variant'),
         ),
         migrations.CreateModel(
             name='Like',
