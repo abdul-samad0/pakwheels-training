@@ -35,21 +35,21 @@
     <select name="make">
       <option value="">All makes</option>
       {% for make in makes %}
-        <option value="{{ make.slug }}" {% if request.GET.make == make.slug %}selected{% endif %}>{{ make.name }}</option>
+        <option value="{{ make }}" {% if request.GET.make == make %}selected{% endif %}>{{ make }}</option>
       {% endfor %}
     </select>
 
     <select name="model">
       <option value="">All models</option>
       {% for mdl in models %}
-        <option value="{{ mdl.slug }}" {% if request.GET.model == mdl.slug %}selected{% endif %}>{{ mdl.make.name }} {{ mdl.name }}</option>
+        <option value="{{ mdl.slug }}" {% if request.GET.model == mdl.slug %}selected{% endif %}>{{ mdl.make }} {{ mdl.name }}</option>
       {% endfor %}
     </select>
 
     <select name="variant">
       <option value="">All variants</option>
       {% for v in variants %}
-        <option value="{{ v.slug }}" {% if request.GET.variant == v.slug %}selected{% endif %}>{{ v.model.make.name }} {{ v.model.name }} - {{ v.name }}</option>
+        <option value="{{ v }}" {% if request.GET.variant == v %}selected{% endif %}>{{ v }}</option>
       {% endfor %}
     </select>
 
@@ -129,7 +129,7 @@
         PKR {{ product.price }} | {{ product.year|default:"N/A" }} | {{ product.mileage|default:"N/A" }} km
       </p>
       <p class="meta">
-        {{ product.make.name|default:"" }} {{ product.model.name|default:"" }} {{ product.variant.name|default:"" }}
+        {{ product.model.make|default:"" }} {{ product.model.name|default:"" }} {{ product.model.variant|default:"" }}
       </p>
       <p class="meta">
         {{ product.location }} | {{ product.fuel_type|default:"-" }} | {{ product.transmission|default:"-" }} | {{ product.condition }}

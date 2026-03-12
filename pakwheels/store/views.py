@@ -3,12 +3,12 @@ from django.core.paginator import Paginator
 from django.db.models import Q
 from django.shortcuts import redirect, render
 from django.utils.text import slugify
-from django.views.decorators.http import require_GET, require_POST
+from django.views.decorators.http import require_GET
 
 from .choices import AssemblyType, FuelType, ProductCondition, ProductStatus, TransmissionType
 from .constants import PRODUCTS_PER_PAGE
-from .forms import ProductForm
-from .models import CarModel, Category, Make, Product, Variant
+from .forms import CategoryForm, ProductForm
+from .models import CarModel, Category, Product
 from .utils import make_unique_slug
 
 
@@ -25,9 +25,9 @@ def product_list_view(request):
         products = products.filter(
             Q(title__icontains=query)
             | Q(description__icontains=query)
-            | Q(make__name__icontains=query)
             | Q(model__name__icontains=query)
-            | Q(variant__name__icontains=query)
+            | Q(model__make__icontains=query)
+            | Q(model__variant__icontains=query)
             | Q(registered_city__icontains=query)
             | Q(color__icontains=query)
             | Q(ad_reference_id__icontains=query)
@@ -38,17 +38,17 @@ def product_list_view(request):
     if category_slug:
         products = products.filter(category__slug=category_slug)
 
-    make_slug = request.GET.get("make")
-    if make_slug:
-        products = products.filter(make__slug=make_slug)
+    make_name = request.GET.get("make")
+    if make_name:
+        products = products.filter(model__make=make_name)
 
     model_slug = request.GET.get("model")
     if model_slug:
         products = products.filter(model__slug=model_slug)
 
-    variant_slug = request.GET.get("variant")
-    if variant_slug:
-        products = products.filter(variant__slug=variant_slug)
+    variant_name = request.GET.get("variant")
+    if variant_name:
+        products = products.filter(model__variant=variant_name)
 
     status = request.GET.get("status")
     if status:
@@ -139,9 +139,11 @@ def product_list_view(request):
     page_obj = paginator.get_page(page_number)
 
     categories = Category.objects.all()
-    makes = Make.objects.all()
-    models = CarModel.objects.select_related("make").all()
-    variants = Variant.objects.select_related("model", "model__make").all()
+    makes = CarModel.objects.values_list(
+        "make", flat=True).distinct().order_by("make")
+    models = CarModel.objects.all()
+    variants = CarModel.objects.exclude(variant="").values_list(
+        "variant", flat=True).distinct().order_by("variant")
 
     context = {
         "page_obj": page_obj,
@@ -159,15 +161,18 @@ def product_list_view(request):
 
 
 @login_required
-@require_POST
 def product_add_view(request):
     """
     Create a new product. Seller is set to request.user.
     Slug is generated from title and made unique.
     """
+    has_categories = Category.objects.exists()
+
     if request.method == "POST":
         form = ProductForm(request.POST)
-        if form.is_valid():
+        if not has_categories:
+            form.add_error("category", "No categories exist. Please create a category first.")
+        elif form.is_valid():
             product = form.save(commit=False)
             product.seller = request.user
             base_slug = slugify(product.title) or "product"
@@ -176,4 +181,27 @@ def product_add_view(request):
             return redirect("product_list")
     else:
         form = ProductForm()
-    return render(request, "store/product_form.html", {"form": form})
+    return render(
+        request,
+        "store/product_form.html",
+        {
+            "form": form,
+            "has_categories": has_categories,
+        },
+    )
+
+
+@login_required
+def category_add_view(request):
+    """Create a category so products can reference it."""
+    if request.method == "POST":
+        form = CategoryForm(request.POST)
+        if form.is_valid():
+            category = form.save(commit=False)
+            base_slug = slugify(category.name) or "category"
+            category.slug = make_unique_slug(base_slug, Category)
+            category.save()
+            return redirect("product_add")
+    else:
+        form = CategoryForm()
+    return render(request, "store/category_form.html", {"form": form})
