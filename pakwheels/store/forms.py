@@ -66,4 +66,7 @@ class CategoryForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields["parent"].queryset = Category.objects.order_by("name")
+        if self.instance and self.instance.pk:
+            self.fields["parent"].queryset = self.fields["parent"].queryset.exclude(
+                pk=self.instance.pk)
         self.fields["parent"].empty_label = "No parent (top-level)"
