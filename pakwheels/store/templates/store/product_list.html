@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Products</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 1100px; margin: 0 auto; padding: 1rem; }
+    form { display: grid; grid-template-columns: repeat(4, minmax(180px, 1fr)); gap: 0.6rem; margin-bottom: 1rem; }
+    input[type="text"], input[type="number"], select { padding: 0.45rem; width: 100%; box-sizing: border-box; }
+    .actions { grid-column: 1 / -1; display: flex; gap: 0.5rem; align-items: center; }
+    .product { border: 1px solid #ddd; padding: 0.85rem; margin-bottom: 0.7rem; }
+    .product h3 { margin: 0 0 0.3rem 0; }
+    .meta { color: #444; font-size: 0.95rem; }
+    .pagination { margin-top: 1rem; }
+    .pagination a, .pagination span { margin-right: 0.5rem; }
+  </style>
+</head>
+<body>
+  <h2>Products</h2>
+  {% if user.is_authenticated %}
+    <p><a href="{% url 'product_add' %}">Add product</a></p>
+  {% endif %}
+
+  <form method="get">
+    <input type="text" name="q" placeholder="Search title/description/make/model..." value="{{ request.GET.q }}" />
+
+    <select name="category">
+      <option value="">All categories</option>
+      {% for cat in categories %}
+        <option value="{{ cat.slug }}" {% if request.GET.category == cat.slug %}selected{% endif %}>{{ cat.name }}</option>
+      {% endfor %}
+    </select>
+
+    <select name="make">
+      <option value="">All makes</option>
+      {% for make in makes %}
+        <option value="{{ make }}" {% if request.GET.make == make %}selected{% endif %}>{{ make }}</option>
+      {% endfor %}
+    </select>
+
+    <select name="model">
+      <option value="">All models</option>
+      {% for mdl in models %}
+        <option value="{{ mdl.slug }}" {% if request.GET.model == mdl.slug %}selected{% endif %}>{{ mdl.make }} {{ mdl.name }}</option>
+      {% endfor %}
+    </select>
+
+    <select name="variant">
+      <option value="">All variants</option>
+      {% for v in variants %}
+        <option value="{{ v }}" {% if request.GET.variant == v %}selected{% endif %}>{{ v }}</option>
+      {% endfor %}
+    </select>
+
+    <select name="status">
+      <option value="">All status</option>
+      {% for value, label in status_choices %}
+        <option value="{{ value }}" {% if request.GET.status == value %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+
+    <select name="condition">
+      <option value="">All condition</option>
+      {% for value, label in condition_choices %}
+        <option value="{{ value }}" {% if request.GET.condition == value %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+
+    <select name="fuel_type">
+      <option value="">All fuel</option>
+      {% for value, label in fuel_type_choices %}
+        <option value="{{ value }}" {% if request.GET.fuel_type == value %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+
+    <select name="transmission">
+      <option value="">All transmission</option>
+      {% for value, label in transmission_choices %}
+        <option value="{{ value }}" {% if request.GET.transmission == value %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+
+    <select name="assembly_type">
+      <option value="">All assembly</option>
+      {% for value, label in assembly_type_choices %}
+        <option value="{{ value }}" {% if request.GET.assembly_type == value %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+
+    <input type="number" name="min_price" placeholder="Min price" value="{{ request.GET.min_price }}" step="any" />
+    <input type="number" name="max_price" placeholder="Max price" value="{{ request.GET.max_price }}" step="any" />
+
+    <input type="number" name="min_year" placeholder="Min year" value="{{ request.GET.min_year }}" />
+    <input type="number" name="max_year" placeholder="Max year" value="{{ request.GET.max_year }}" />
+
+    <input type="number" name="min_mileage" placeholder="Min mileage" value="{{ request.GET.min_mileage }}" />
+    <input type="number" name="max_mileage" placeholder="Max mileage" value="{{ request.GET.max_mileage }}" />
+
+    <input type="number" name="min_engine_cc" placeholder="Min engine cc" value="{{ request.GET.min_engine_cc }}" />
+    <input type="number" name="max_engine_cc" placeholder="Max engine cc" value="{{ request.GET.max_engine_cc }}" />
+
+    <input type="text" name="registered_city" placeholder="Registered city" value="{{ request.GET.registered_city }}" />
+    <input type="text" name="body_type" placeholder="Body type" value="{{ request.GET.body_type }}" />
+    <input type="text" name="color" placeholder="Color" value="{{ request.GET.color }}" />
+
+    <select name="sort">
+      <option value="">Newest first</option>
+      <option value="price_asc" {% if request.GET.sort == "price_asc" %}selected{% endif %}>Price: low to high</option>
+      <option value="price_desc" {% if request.GET.sort == "price_desc" %}selected{% endif %}>Price: high to low</option>
+      <option value="year_asc" {% if request.GET.sort == "year_asc" %}selected{% endif %}>Year: old to new</option>
+      <option value="year_desc" {% if request.GET.sort == "year_desc" %}selected{% endif %}>Year: new to old</option>
+      <option value="mileage_asc" {% if request.GET.sort == "mileage_asc" %}selected{% endif %}>Mileage: low to high</option>
+      <option value="mileage_desc" {% if request.GET.sort == "mileage_desc" %}selected{% endif %}>Mileage: high to low</option>
+    </select>
+
+    <div class="actions">
+      <button type="submit">Apply filters</button>
+      <a href="{% url 'product_list' %}">Reset</a>
+    </div>
+  </form>
+
+  <hr />
+
+  {% for product in page_obj %}
+    <div class="product">
+      <h3>{{ product.title }}</h3>
+      <p class="meta">
+        PKR {{ product.price }} | {{ product.year|default:"N/A" }} | {{ product.mileage|default:"N/A" }} km
+      </p>
+      <p class="meta">
+        {{ product.model.make|default:"" }} {{ product.model.name|default:"" }} {{ product.model.variant|default:"" }}
+      </p>
+      <p class="meta">
+        {{ product.location }} | {{ product.fuel_type|default:"-" }} | {{ product.transmission|default:"-" }} | {{ product.condition }}
+      </p>
+    </div>
+  {% empty %}
+    <p>No products found.</p>
+  {% endfor %}
+
+  <hr />
+
+  <div class="pagination">
+    {% if page_obj.has_previous %}
+      <a href="?{% if query_string %}{{ query_string }}&{% endif %}page={{ page_obj.previous_page_number }}">Previous</a>
+    {% endif %}
+    <span>Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+    {% if page_obj.has_next %}
+      <a href="?{% if query_string %}{{ query_string }}&{% endif %}page={{ page_obj.next_page_number }}">Next</a>
+    {% endif %}
+  </div>
+</body>
+</html>
