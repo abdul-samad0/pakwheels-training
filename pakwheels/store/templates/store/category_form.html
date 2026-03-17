@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Add category</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 500px; margin: 0 auto; padding: 1rem; }
+    form { display: flex; flex-direction: column; gap: 0.75rem; }
+    label { font-weight: 500; }
+    input[type="text"], select { padding: 0.5rem; width: 100%; box-sizing: border-box; }
+    .errorlist { color: #c00; margin: 0; padding: 0; list-style: none; font-size: 0.9rem; }
+    button[type="submit"] { padding: 0.5rem 1rem; cursor: pointer; }
+    .actions { display: flex; gap: 0.5rem; align-items: center; margin-top: 1rem; }
+  </style>
+</head>
+<body>
+  <h2>Add category</h2>
+  <form method="post" action="{% url 'category_add' %}">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <div class="actions">
+      <button type="submit">Save category</button>
+      <a href="{% url 'product_add' %}">Back to add product</a>
+    </div>
+  </form>
+</body>
+</html>
