@@ -1,17 +1,19 @@
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from django.db.models import Q
-from django.shortcuts import redirect, render
+from django.http import JsonResponse
+from django.shortcuts import get_object_or_404, redirect, render
 from django.utils.text import slugify
-from django.views.decorators.http import require_GET
+from django.views.decorators.http import require_GET, require_POST
 
 from .choices import AssemblyType, FuelType, ProductCondition, ProductStatus, TransmissionType
 from .constants import PRODUCTS_PER_PAGE
 from .forms import CategoryForm, ProductForm
-from .models import CarModel, Category, Product
+from .models import CarModel, Category, Favorite, Product
 from .utils import make_unique_slug
 
 
+@login_required
 @require_GET
 def product_list_view(request):
     """
@@ -144,6 +146,16 @@ def product_list_view(request):
     models = CarModel.objects.all()
     variants = CarModel.objects.exclude(variant="").values_list(
         "variant", flat=True).distinct().order_by("variant")
+    favorite_product_ids = list(
+        Favorite.objects.filter(
+            user=request.user,
+            product_id__in=[item.id for item in page_obj.object_list],
+        ).values_list("product_id", flat=True)
+    )
+    get_dict = request.GET.copy()
+    if "page" in get_dict:
+        get_dict.pop("page")
+    query_string = get_dict.urlencode()
 
     context = {
         "page_obj": page_obj,
@@ -156,6 +168,8 @@ def product_list_view(request):
         "fuel_type_choices": FuelType.choices,
         "transmission_choices": TransmissionType.choices,
         "assembly_type_choices": AssemblyType.choices,
+        "query_string": query_string,
+        "favorite_product_ids": favorite_product_ids,
     }
     return render(request, "store/product_list.html", context)
 
@@ -171,7 +185,8 @@ def product_add_view(request):
     if request.method == "POST":
         form = ProductForm(request.POST)
         if not has_categories:
-            form.add_error("category", "No categories exist. Please create a category first.")
+            form.add_error(
+                "category", "No categories exist. Please create a category first.")
         elif form.is_valid():
             product = form.save(commit=False)
             product.seller = request.user
@@ -205,3 +220,51 @@ def category_add_view(request):
     else:
         form = CategoryForm()
     return render(request, "store/category_form.html", {"form": form})
+
+
+@login_required
+@require_GET
+def product_detail_view(request, slug):
+    """Render one product with full details and images."""
+    product = get_object_or_404(
+        Product.objects.filter(
+            slug=slug,
+            is_active=True,
+        ))
+    is_favorite = Favorite.objects.filter(
+        user=request.user, product=product).exists()
+    return render(
+        request,
+        "store/product_detail.html",
+        {
+            "product": product,
+            "is_favorite": is_favorite,
+        },
+    )
+
+
+@login_required
+@require_POST
+def favorite_toggle_view(request, slug):
+    """Toggle favorite state and return the current state."""
+    product = get_object_or_404(Product, slug=slug, is_active=True)
+    is_favorite = Favorite.objects.filter(
+        user=request.user, product=product).exists()
+
+    if is_favorite:
+        Favorite.objects.filter(user=request.user, product=product).delete()
+        is_favorite = False
+    else:
+        Favorite.objects.get_or_create(user=request.user, product=product)
+        is_favorite = True
+
+    return JsonResponse({"is_favorite": is_favorite, "product_id": product.id})
+
+
+@login_required
+@require_GET
+def favorite_list_view(request):
+    """Render the authenticated user's favorite products."""
+    favorites = Favorite.objects.filter(
+        user=request.user, product__is_active=True).order_by("-created")
+    return render(request, "store/favorite_list.html", {"favorites": favorites})

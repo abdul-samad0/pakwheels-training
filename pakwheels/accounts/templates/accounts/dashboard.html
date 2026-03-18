@@ -8,7 +8,12 @@
     <a href="{% url 'product_list' %}">Browse products</a>
     &middot;
     <a href="{% url 'product_add' %}">Add product</a>
+    &middot;
+    <a href="{% url 'favorite_list' %}">My favorites</a>
   </p>
 
-  <p><a href="{% url 'logout' %}">Log out</a></p>
+  <form method="post" action="{% url 'logout' %}">
+    {% csrf_token %}
+    <button type="submit">Log out</button>
+  </form>
 {% endblock %}

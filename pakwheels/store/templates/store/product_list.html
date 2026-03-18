@@ -14,12 +14,19 @@
     .meta { color: #444; font-size: 0.95rem; }
     .pagination { margin-top: 1rem; }
     .pagination a, .pagination span { margin-right: 0.5rem; }
+    .favorite-btn { padding: 0.4rem 0.75rem; border: 1px solid #777; background: #fff; cursor: pointer; }
+    .favorite-btn--active { background: #f4d35e; border-color: #caa52b; color: #111; }
+    .detail-btn { display: inline-block; margin-top: 0.5rem; padding: 0.4rem 0.75rem; border: 1px solid #333; text-decoration: none; color: #111; }
   </style>
 </head>
 <body>
   <h2>Products</h2>
   {% if user.is_authenticated %}
-    <p><a href="{% url 'product_add' %}">Add product</a></p>
+    <p>
+      <a href="{% url 'product_add' %}">Add product</a>
+      &middot;
+      <a href="{% url 'favorite_list' %}">My favorites</a>
+    </p>
   {% endif %}
 
   <form method="get">
@@ -124,7 +131,7 @@
 
   {% for product in page_obj %}
     <div class="product">
-      <h3>{{ product.title }}</h3>
+      <h3><a href="{% url 'product_detail' product.slug %}">{{ product.title }}</a></h3>
       <p class="meta">
         PKR {{ product.price }} | {{ product.year|default:"N/A" }} | {{ product.mileage|default:"N/A" }} km
       </p>
@@ -134,6 +141,18 @@
       <p class="meta">
         {{ product.location }} | {{ product.fuel_type|default:"-" }} | {{ product.transmission|default:"-" }} | {{ product.condition }}
       </p>
+      <a class="detail-btn" href="{% url 'product_detail' product.slug %}">View details</a>
+      {% if user.is_authenticated %}
+        <form class="js-favorite-form" method="post" action="{% url 'favorite_toggle' product.slug %}">
+          {% csrf_token %}
+          <button
+            type="submit"
+            class="favorite-btn {% if product.id in favorite_product_ids %}favorite-btn--active{% endif %}"
+          >
+            {% if product.id in favorite_product_ids %}Favorited{% else %}Favorite{% endif %}
+          </button>
+        </form>
+      {% endif %}
     </div>
   {% empty %}
     <p>No products found.</p>
@@ -150,5 +169,27 @@
       <a href="?{% if query_string %}{{ query_string }}&{% endif %}page={{ page_obj.next_page_number }}">Next</a>
     {% endif %}
   </div>
+
+  <script>
+    document.querySelectorAll(".js-favorite-form").forEach((formEl) => {
+      formEl.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const submitButton = formEl.querySelector("button[type='submit']");
+        if (!submitButton) return;
+        const formData = new FormData(formEl);
+        const response = await fetch(formEl.action, {
+          method: "POST",
+          body: formData,
+          headers: { "X-Requested-With": "XMLHttpRequest" },
+        });
+        if (response.ok) {
+          const payload = await response.json();
+          const isFavorite = Boolean(payload.is_favorite);
+          submitButton.classList.toggle("favorite-btn--active", isFavorite);
+          submitButton.textContent = isFavorite ? "Favorited" : "Favorite";
+        }
+      });
+    });
+  </script>
 </body>
 </html>
