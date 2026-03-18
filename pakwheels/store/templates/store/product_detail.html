@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{{ product.title }}</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 900px; margin: 0 auto; padding: 1rem; }
+    .meta { color: #444; margin: 0.35rem 0; }
+    .section { border: 1px solid #ddd; padding: 0.9rem; margin-top: 0.9rem; }
+    .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 0.6rem; }
+    .gallery img { width: 100%; height: 150px; object-fit: cover; border: 1px solid #ddd; }
+    .actions { margin-top: 1rem; display: flex; gap: 0.6rem; align-items: center; }
+    button { padding: 0.45rem 0.8rem; cursor: pointer; }
+    .muted { color: #666; }
+    .favorite-btn { padding: 0.45rem 0.8rem; border: 1px solid #777; background: #fff; cursor: pointer; }
+    .favorite-btn--active { background: #f4d35e; border-color: #caa52b; color: #111; }
+  </style>
+</head>
+<body>
+  <p><a href="{% url 'product_list' %}">Back to products</a></p>
+  <h1>{{ product.title }}</h1>
+
+  <div class="actions">
+    {% if user.is_authenticated %}
+      <form class="js-favorite-form" method="post" action="{% url 'favorite_toggle' product.slug %}">
+        {% csrf_token %}
+        <button
+          type="submit"
+          class="favorite-btn {% if is_favorite %}favorite-btn--active{% endif %}"
+        >
+          {% if is_favorite %}Favorited{% else %}Favorite{% endif %}
+        </button>
+      </form>
+    {% else %}
+      <span class="muted">Log in to save this product to favorites.</span>
+    {% endif %}
+  </div>
+
+  <div class="section">
+    <h3>Overview</h3>
+    <p class="meta"><strong>Price:</strong> PKR {{ product.price }}</p>
+    <p class="meta"><strong>Category:</strong> {{ product.category.name }}</p>
+    <p class="meta"><strong>Status:</strong> {{ product.status }}</p>
+    <p class="meta"><strong>Condition:</strong> {{ product.condition }}</p>
+    <p class="meta"><strong>Location:</strong> {{ product.location }}</p>
+    <p class="meta"><strong>Description:</strong> {{ product.description }}</p>
+  </div>
+
+  <div class="section">
+    <h3>Specifications</h3>
+    <p class="meta"><strong>Make / Model / Variant:</strong> {{ product.model.make|default:"-" }} / {{ product.model.name|default:"-" }} / {{ product.model.variant|default:"-" }}</p>
+    <p class="meta"><strong>Year:</strong> {{ product.year|default:"-" }}</p>
+    <p class="meta"><strong>Mileage:</strong> {{ product.mileage|default:"-" }}</p>
+    <p class="meta"><strong>Engine (cc):</strong> {{ product.engine_capacity_cc|default:"-" }}</p>
+    <p class="meta"><strong>Fuel:</strong> {{ product.fuel_type|default:"-" }}</p>
+    <p class="meta"><strong>Transmission:</strong> {{ product.transmission|default:"-" }}</p>
+    <p class="meta"><strong>Assembly:</strong> {{ product.assembly_type|default:"-" }}</p>
+    <p class="meta"><strong>Registered City:</strong> {{ product.registered_city|default:"-" }}</p>
+    <p class="meta"><strong>Body Type:</strong> {{ product.body_type|default:"-" }}</p>
+    <p class="meta"><strong>Color:</strong> {{ product.color|default:"-" }}</p>
+  </div>
+
+  <div class="section">
+    <h3>Seller Contact</h3>
+    <p class="meta"><strong>Email:</strong> {{ product.seller.email }}</p>
+    <p class="meta"><strong>Phone:</strong> {{ product.seller.phone|default:"-" }}</p>
+  </div>
+
+  <div class="section">
+    <h3>Additional Images</h3>
+    {% if product.images.count %}
+      <div class="gallery">
+        {% for image in product.images.all %}
+          <img src="{{ image.image.url }}" alt="{{ product.title }} image {{ forloop.counter }}" />
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="muted">No additional images uploaded yet.</p>
+    {% endif %}
+  </div>
+
+  <script>
+    document.querySelectorAll(".js-favorite-form").forEach((formEl) => {
+      formEl.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const submitButton = formEl.querySelector("button[type='submit']");
+        if (!submitButton) return;
+        const formData = new FormData(formEl);
+        const response = await fetch(formEl.action, {
+          method: "POST",
+          body: formData,
+          headers: { "X-Requested-With": "XMLHttpRequest" },
+        });
+        if (response.ok) {
+          const payload = await response.json();
+          const isFavorite = Boolean(payload.is_favorite);
+          submitButton.classList.toggle("favorite-btn--active", isFavorite);
+          submitButton.textContent = isFavorite ? "Favorited" : "Favorite";
+        }
+      });
+    });
+  </script>
+</body>
+</html>

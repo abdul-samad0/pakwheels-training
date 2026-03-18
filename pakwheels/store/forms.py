@@ -70,3 +70,4 @@ class CategoryForm(forms.ModelForm):
             self.fields["parent"].queryset = self.fields["parent"].queryset.exclude(
                 pk=self.instance.pk)
         self.fields["parent"].empty_label = "No parent (top-level)"
+        

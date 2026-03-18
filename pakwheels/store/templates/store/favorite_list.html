@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>My Favorites</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 1000px; margin: 0 auto; padding: 1rem; }
+    .item { border: 1px solid #ddd; padding: 0.85rem; margin-bottom: 0.7rem; }
+    .meta { color: #444; font-size: 0.95rem; }
+    .actions { margin-top: 0.6rem; display: flex; gap: 0.5rem; align-items: center; }
+    button { padding: 0.4rem 0.75rem; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <h2>My Favorite Products</h2>
+  <p><a href="{% url 'product_list' %}">Back to products</a></p>
+
+  {% for favorite in favorites %}
+    <div class="item">
+      <h3><a href="{% url 'product_detail' favorite.product.slug %}">{{ favorite.product.title }}</a></h3>
+      <p class="meta">
+        PKR {{ favorite.product.price }} | {{ favorite.product.location }} | {{ favorite.product.category.name }}
+      </p>
+      <p class="meta">
+        {{ favorite.product.model.make|default:"" }} {{ favorite.product.model.name|default:"" }} {{ favorite.product.model.variant|default:"" }}
+      </p>
+      <div class="actions">
+        <form class="js-favorite-remove-form" method="post" action="{% url 'favorite_toggle' favorite.product.slug %}">
+          {% csrf_token %}
+          <button type="submit">Remove from favorites</button>
+        </form>
+      </div>
+    </div>
+  {% empty %}
+    <p>You have no favorite products yet.</p>
+  {% endfor %}
+
+  <script>
+    document.querySelectorAll(".js-favorite-remove-form").forEach((formEl) => {
+      formEl.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const response = await fetch(formEl.action, {
+          method: "POST",
+          body: new FormData(formEl),
+          headers: { "X-Requested-With": "XMLHttpRequest" },
+        });
+        if (response.ok) {
+          const item = formEl.closest(".item");
+          if (item) {
+            item.remove();
+          }
+        }
+      });
+    });
+  </script>
+</body>
+</html>
