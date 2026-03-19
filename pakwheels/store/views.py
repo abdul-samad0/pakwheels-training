@@ -1,6 +1,6 @@
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
-from django.db.models import Q
+from django.db.models import Avg, Q
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils.text import slugify
@@ -9,7 +9,7 @@ from django.views.decorators.http import require_GET, require_POST
 from .choices import AssemblyType, FuelType, ProductCondition, ProductStatus, TransmissionType
 from .constants import PRODUCTS_PER_PAGE
 from .forms import CategoryForm, ProductForm
-from .models import CarModel, Category, Favorite, Product
+from .models import CarModel, Category, Favorite, Like, Product, Rating
 from .utils import make_unique_slug
 
 
@@ -152,6 +152,12 @@ def product_list_view(request):
             product_id__in=[item.id for item in page_obj.object_list],
         ).values_list("product_id", flat=True)
     )
+    like_product_ids = list(
+        Like.objects.filter(
+            user=request.user,
+            product_id__in=[item.id for item in page_obj.object_list],
+        ).values_list("product_id", flat=True)
+    )
     get_dict = request.GET.copy()
     if "page" in get_dict:
         get_dict.pop("page")
@@ -170,6 +176,7 @@ def product_list_view(request):
         "assembly_type_choices": AssemblyType.choices,
         "query_string": query_string,
         "favorite_product_ids": favorite_product_ids,
+        "like_product_ids": like_product_ids,
     }
     return render(request, "store/product_list.html", context)
 
@@ -233,12 +240,22 @@ def product_detail_view(request, slug):
         ))
     is_favorite = Favorite.objects.filter(
         user=request.user, product=product).exists()
+    is_liked = Like.objects.filter(user=request.user, product=product).exists()
+    user_rating = Rating.objects.filter(user=request.user, product=product).first()
+    rating_summary = Rating.objects.filter(product=product).aggregate(
+        average_rating=Avg("score")
+    )
     return render(
         request,
         "store/product_detail.html",
         {
             "product": product,
             "is_favorite": is_favorite,
+            "is_liked": is_liked,
+            "like_count": Like.objects.filter(product=product).count(),
+            "user_rating": user_rating.score if user_rating else None,
+            "average_rating": rating_summary["average_rating"],
+            "rating_count": Rating.objects.filter(product=product).count(),
         },
     )
 
@@ -259,6 +276,59 @@ def favorite_toggle_view(request, slug):
         is_favorite = True
 
     return JsonResponse({"is_favorite": is_favorite, "product_id": product.id})
+
+
+@login_required
+@require_POST
+def like_toggle_view(request, slug):
+    """Toggle like state and return the current state."""
+    product = get_object_or_404(Product, slug=slug, is_active=True)
+    is_liked = Like.objects.filter(user=request.user, product=product).exists()
+
+    if is_liked:
+        Like.objects.filter(user=request.user, product=product).delete()
+        is_liked = False
+    else:
+        Like.objects.get_or_create(user=request.user, product=product)
+        is_liked = True
+
+    like_count = Like.objects.filter(product=product).count()
+    return JsonResponse(
+        {"is_liked": is_liked, "like_count": like_count, "product_id": product.id}
+    )
+
+
+@login_required
+@require_POST
+def product_rating_view(request, slug):
+    """Create or update rating for a product."""
+    product = get_object_or_404(Product, slug=slug, is_active=True)
+    raw_score = request.POST.get("score")
+
+    try:
+        score = int(raw_score)
+    except (TypeError, ValueError):
+        return JsonResponse({"error": "Invalid rating value."}, status=400)
+
+    if score < 1 or score > 5:
+        return JsonResponse({"error": "Rating must be between 1 and 5."}, status=400)
+
+    Rating.objects.update_or_create(
+        user=request.user,
+        product=product,
+        defaults={"score": score},
+    )
+    summary = Rating.objects.filter(product=product).aggregate(average_rating=Avg("score"))
+    rating_count = Rating.objects.filter(product=product).count()
+
+    return JsonResponse(
+        {
+            "score": score,
+            "average_rating": summary["average_rating"],
+            "rating_count": rating_count,
+            "product_id": product.id,
+        }
+    )
 
 
 @login_required
