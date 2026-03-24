@@ -33,8 +33,10 @@ INSTALLED_APPS = [
 
     'django_extensions',
 
-    'accounts',
-    'store',
+    'pakwheels.accounts.apps.AccountsConfig',
+    'pakwheels.store.apps.StoreConfig',
+    'rest_framework',
+
 ]
 
 MIDDLEWARE = [
