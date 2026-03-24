@@ -11,12 +11,14 @@ class UserRegistrationForm(UserCreationForm):
         model = User
         fields = ["email", "phone", "password1", "password2"]
 
+
 class ProfileUserForm(forms.ModelForm):
     """Update basic user account information."""
 
     class Meta:
         model = User
         fields = ["email", "first_name", "last_name", "phone"]
+
 
 class ProfileForm(forms.ModelForm):
     """Update profile details."""
@@ -34,3 +36,4 @@ class ProfileImageForm(forms.Form):
 
 class AccountPasswordChangeForm(PasswordChangeForm):
     """Password change form wrapper for account settings page."""
+    pass

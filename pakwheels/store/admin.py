@@ -18,6 +18,7 @@ class CategoryAdmin(admin.ModelAdmin):
     list_display = ("id", "name", "parent", "modified")
     search_fields = ("name", "slug")
     list_filter = ("parent",)
+    raw_id_fields = ("parent",)
 
 
 @admin.register(CarModel)
@@ -29,10 +30,12 @@ class CarModelAdmin(admin.ModelAdmin):
 
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
-    list_display = ("id", "title", "seller", "category", "status", "price", "is_active", "modified")
+    list_display = ("id", "title", "seller", "category",
+                    "status", "price", "is_active", "modified")
     list_filter = ("status", "is_active", "condition", "category")
     search_fields = ("title", "slug", "seller__email", "ad_reference_id")
     autocomplete_fields = ("seller", "category", "model")
+    raw_id_fields = ("seller", "category", "model")
 
 
 @admin.register(ProductImage)
