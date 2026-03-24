@@ -12,10 +12,14 @@
     .product { border: 1px solid #ddd; padding: 0.85rem; margin-bottom: 0.7rem; }
     .product h3 { margin: 0 0 0.3rem 0; }
     .meta { color: #444; font-size: 0.95rem; }
+    .product-actions { display: flex; gap: 0.5rem; align-items: center; margin-top: 0.5rem; }
+    .product-actions form { display: inline; margin: 0; }
     .pagination { margin-top: 1rem; }
     .pagination a, .pagination span { margin-right: 0.5rem; }
     .favorite-btn { padding: 0.4rem 0.75rem; border: 1px solid #777; background: #fff; cursor: pointer; }
     .favorite-btn--active { background: #f4d35e; border-color: #caa52b; color: #111; }
+    .like-btn { padding: 0.4rem 0.75rem; border: 1px solid #777; background: #fff; cursor: pointer; }
+    .like-btn--active { background: #f7b6c2; border-color: #d77186; color: #111; }
     .detail-btn { display: inline-block; margin-top: 0.5rem; padding: 0.4rem 0.75rem; border: 1px solid #333; text-decoration: none; color: #111; }
   </style>
 </head>
@@ -141,18 +145,29 @@
       <p class="meta">
         {{ product.location }} | {{ product.fuel_type|default:"-" }} | {{ product.transmission|default:"-" }} | {{ product.condition }}
       </p>
-      <a class="detail-btn" href="{% url 'product_detail' product.slug %}">View details</a>
-      {% if user.is_authenticated %}
-        <form class="js-favorite-form" method="post" action="{% url 'favorite_toggle' product.slug %}">
-          {% csrf_token %}
-          <button
-            type="submit"
-            class="favorite-btn {% if product.id in favorite_product_ids %}favorite-btn--active{% endif %}"
-          >
-            {% if product.id in favorite_product_ids %}Favorited{% else %}Favorite{% endif %}
-          </button>
-        </form>
-      {% endif %}
+      <div class="product-actions">
+        <a class="detail-btn" href="{% url 'product_detail' product.slug %}">View details</a>
+        {% if user.is_authenticated %}
+          <form class="js-favorite-form" method="post" action="{% url 'favorite_toggle' product.slug %}">
+            {% csrf_token %}
+            <button
+              type="submit"
+              class="favorite-btn {% if product.id in favorite_product_ids %}favorite-btn--active{% endif %}"
+            >
+              {% if product.id in favorite_product_ids %}Favorited{% else %}Favorite{% endif %}
+            </button>
+          </form>
+          <form class="js-like-form" method="post" action="{% url 'like_toggle' product.slug %}">
+            {% csrf_token %}
+            <button
+              type="submit"
+              class="like-btn {% if product.id in like_product_ids %}like-btn--active{% endif %}"
+            >
+              {% if product.id in like_product_ids %}Liked{% else %}Like{% endif %}
+            </button>
+          </form>
+        {% endif %}
+      </div>
     </div>
   {% empty %}
     <p>No products found.</p>
@@ -187,6 +202,26 @@
           const isFavorite = Boolean(payload.is_favorite);
           submitButton.classList.toggle("favorite-btn--active", isFavorite);
           submitButton.textContent = isFavorite ? "Favorited" : "Favorite";
+        }
+      });
+    });
+
+    document.querySelectorAll(".js-like-form").forEach((formEl) => {
+      formEl.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const submitButton = formEl.querySelector("button[type='submit']");
+        if (!submitButton) return;
+        const formData = new FormData(formEl);
+        const response = await fetch(formEl.action, {
+          method: "POST",
+          body: formData,
+          headers: { "X-Requested-With": "XMLHttpRequest" },
+        });
+        if (response.ok) {
+          const payload = await response.json();
+          const isLiked = Boolean(payload.is_liked);
+          submitButton.classList.toggle("like-btn--active", isLiked);
+          submitButton.textContent = isLiked ? "Liked" : "Like";
         }
       });
     });

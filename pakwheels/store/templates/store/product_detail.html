@@ -15,6 +15,10 @@
     .muted { color: #666; }
     .favorite-btn { padding: 0.45rem 0.8rem; border: 1px solid #777; background: #fff; cursor: pointer; }
     .favorite-btn--active { background: #f4d35e; border-color: #caa52b; color: #111; }
+    .like-btn { padding: 0.45rem 0.8rem; border: 1px solid #777; background: #fff; cursor: pointer; }
+    .like-btn--active { background: #f7b6c2; border-color: #d77186; color: #111; }
+    .rating-form { display: flex; gap: 0.5rem; align-items: center; margin-top: 0.6rem; }
+    .rating-summary { margin-top: 0.5rem; }
   </style>
 </head>
 <body>
@@ -30,6 +34,15 @@
           class="favorite-btn {% if is_favorite %}favorite-btn--active{% endif %}"
         >
           {% if is_favorite %}Favorited{% else %}Favorite{% endif %}
+        </button>
+      </form>
+      <form class="js-like-form" method="post" action="{% url 'like_toggle' product.slug %}">
+        {% csrf_token %}
+        <button
+          type="submit"
+          class="like-btn {% if is_liked %}like-btn--active{% endif %}"
+        >
+          {% if is_liked %}Liked{% else %}Like{% endif %}
         </button>
       </form>
     {% else %}
@@ -68,6 +81,32 @@
   </div>
 
   <div class="section">
+    <h3>Ratings</h3>
+    <p class="rating-summary">
+      Average rating:
+      <strong id="average-rating">
+        {% if average_rating %}{{ average_rating|floatformat:1 }}{% else %}N/A{% endif %}
+      </strong>
+      (<span id="rating-count">{{ rating_count }}</span> ratings)
+    </p>
+    {% if user.is_authenticated %}
+      <form class="rating-form js-rating-form" method="post" action="{% url 'product_rating' product.slug %}">
+        {% csrf_token %}
+        <label for="rating-score">Your rating:</label>
+        <select id="rating-score" name="score">
+          {% for value in "12345" %}
+            <option value="{{ value }}" {% if user_rating|stringformat:"s" == value %}selected{% endif %}>{{ value }}</option>
+          {% endfor %}
+        </select>
+        <button type="submit">Save rating</button>
+      </form>
+      <p id="rating-message" class="muted"></p>
+    {% else %}
+      <p class="muted">Log in to rate this product.</p>
+    {% endif %}
+  </div>
+
+  <div class="section">
     <h3>Additional Images</h3>
     {% if product.images.count %}
       <div class="gallery">
@@ -97,6 +136,54 @@
           const isFavorite = Boolean(payload.is_favorite);
           submitButton.classList.toggle("favorite-btn--active", isFavorite);
           submitButton.textContent = isFavorite ? "Favorited" : "Favorite";
+        }
+      });
+    });
+
+    document.querySelectorAll(".js-like-form").forEach((formEl) => {
+      formEl.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const submitButton = formEl.querySelector("button[type='submit']");
+        if (!submitButton) return;
+        const formData = new FormData(formEl);
+        const response = await fetch(formEl.action, {
+          method: "POST",
+          body: formData,
+          headers: { "X-Requested-With": "XMLHttpRequest" },
+        });
+        if (response.ok) {
+          const payload = await response.json();
+          const isLiked = Boolean(payload.is_liked);
+          submitButton.classList.toggle("like-btn--active", isLiked);
+          submitButton.textContent = isLiked ? "Liked" : "Like";
+        }
+      });
+    });
+
+    document.querySelectorAll(".js-rating-form").forEach((formEl) => {
+      formEl.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const response = await fetch(formEl.action, {
+          method: "POST",
+          body: new FormData(formEl),
+          headers: { "X-Requested-With": "XMLHttpRequest" },
+        });
+        const messageNode = document.getElementById("rating-message");
+        if (response.ok) {
+          const payload = await response.json();
+          const averageNode = document.getElementById("average-rating");
+          const countNode = document.getElementById("rating-count");
+          if (averageNode) {
+            averageNode.textContent = Number(payload.average_rating).toFixed(1);
+          }
+          if (countNode) {
+            countNode.textContent = String(payload.rating_count);
+          }
+          if (messageNode) {
+            messageNode.textContent = `Rating saved: ${payload.score}/5`;
+          }
+        } else if (messageNode) {
+          messageNode.textContent = "Could not save rating.";
         }
       });
     });
