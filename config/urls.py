@@ -24,6 +24,8 @@ urlpatterns = [
     path("accounts/", include("pakwheels.accounts.urls")),
     path("api/v1/auth/", include("pakwheels.accounts.api.v1.urls")),
     path("store/", include("pakwheels.store.urls")),
+    path("api/v1/store/", include("pakwheels.store.api.v1.urls")),
+
 ]
 
 if settings.DEBUG:
