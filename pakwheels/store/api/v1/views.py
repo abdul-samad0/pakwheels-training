@@ -1,9 +1,6 @@
 from django.db.models import Q
 from rest_framework import generics
-from rest_framework.pagination import PageNumberPagination
-from rest_framework.permissions import AllowAny, IsAuthenticated
 
-from pakwheels.store.constants import PRODUCTS_PER_PAGE
 from pakwheels.store.models import Category, Product
 
 from .serializers import (
@@ -13,26 +10,14 @@ from .serializers import (
 )
 
 
-class ProductPagination(PageNumberPagination):
-    page_size = PRODUCTS_PER_PAGE
-    page_size_query_param = "page_size"
-
 class CategoryCreateAPIView(generics.CreateAPIView):
-    queryset = Category.objects.all()
     serializer_class = CategorySerializer
-    permission_classes = [IsAuthenticated]
 
-
-class ProductCreateAPIView(generics.CreateAPIView):
-    queryset = Product.objects.all()
-    serializer_class = ProductCreateSerializer
-    permission_classes = [IsAuthenticated]
-
-
-class ProductListAPIView(generics.ListAPIView):
-    serializer_class = ProductListSerializer
-    permission_classes = [IsAuthenticated]
-    pagination_class = ProductPagination
+class ProductListCreateAPIView(generics.ListCreateAPIView):
+    def get_serializer_class(self):
+        if self.request.method == "POST":
+            return ProductCreateSerializer
+        return ProductListSerializer
 
     def get_queryset(self):
         products = Product.objects.all()

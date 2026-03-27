@@ -6,17 +6,30 @@ from pakwheels.store.utils import make_unique_slug
 
 
 class CategorySerializer(serializers.ModelSerializer):
+    slug = serializers.SlugField(required=False, allow_blank=True)
+
     class Meta:
         model = Category
         fields = ("id", "name", "slug", "parent")
-        read_only_fields = ("id", "slug")
+        read_only_fields = ("id",)
+
+    def validate_slug(self, value):
+        if value and Category.objects.filter(slug=value).exists():
+            raise serializers.ValidationError(
+                "Category with this slug already exists.")
+        return value
 
     def create(self, validated_data):
-        category = Category(**validated_data)
-        base_slug = slugify(category.name) or "category"
-        category.slug = make_unique_slug(base_slug, Category)
-        category.save()
-        return category
+        provided_slug = validated_data.pop("slug", "")
+        if provided_slug:
+            return Category.objects.create(**validated_data, slug=provided_slug)
+
+        else:
+            name = validated_data.get("name", "")
+            base_slug = slugify(name) or "category"
+            slug = make_unique_slug(base_slug, Category)
+            validated_data["slug"] = slug
+            return Category.objects.create(**validated_data)
 
 
 class ProductCreateSerializer(serializers.ModelSerializer):
@@ -59,8 +72,9 @@ class ProductCreateSerializer(serializers.ModelSerializer):
 
 class ProductListSerializer(serializers.ModelSerializer):
     category = serializers.StringRelatedField()
-    model_name = serializers.SerializerMethodField()
-    seller_email = serializers.EmailField(source="seller.email", read_only=True)
+    model_name = serializers.CharField(source="model.name", read_only=True)
+    seller_email = serializers.EmailField(
+        source="seller.email", read_only=True)
 
     class Meta:
         model = Product
@@ -87,7 +101,3 @@ class ProductListSerializer(serializers.ModelSerializer):
             "seller_email",
         )
 
-    def get_model_name(self, obj):
-        if not obj.model_id:
-            return None
-        return str(obj.model)
