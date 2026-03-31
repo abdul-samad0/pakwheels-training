@@ -34,6 +34,7 @@ INSTALLED_APPS = [
 
     'django_extensions',
 
+    'pakwheels.common.apps.CommonConfig',
     'pakwheels.accounts.apps.AccountsConfig',
     'pakwheels.store.apps.StoreConfig',
     'rest_framework',
@@ -120,6 +121,8 @@ USE_I18N = True
 
 USE_TZ = True
 
+PRODUCTS_PER_PAGE = 6
+
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
@@ -143,6 +146,7 @@ REST_FRAMEWORK = {
     "DEFAULT_PERMISSION_CLASSES": (
         "rest_framework.permissions.IsAuthenticated",
     ),
+    "DEFAULT_PAGINATION_CLASS": ("pakwheels.common.pagination.DefaultPageNumberPagination"),
 }
 
 SIMPLE_JWT = {
