@@ -1,17 +1,25 @@
 from django.db.models import Q
+from django.shortcuts import get_object_or_404
 from rest_framework import generics
+from rest_framework import status
+from rest_framework.response import Response
 
-from pakwheels.store.models import Category, Product
+from pakwheels.store.models import Category, Product, Like, Favorite
 
 from .serializers import (
     CategorySerializer,
     ProductCreateSerializer,
     ProductListSerializer,
+    ProductDetailSerializer,
+    ProductLikeSerializer,
+    FavoriteSerializer,
+    RatingSerializer,
 )
 
 
 class CategoryCreateAPIView(generics.CreateAPIView):
     serializer_class = CategorySerializer
+
 
 class ProductListCreateAPIView(generics.ListCreateAPIView):
     def get_serializer_class(self):
@@ -129,3 +137,45 @@ class ProductListCreateAPIView(generics.ListCreateAPIView):
             return products.order_by("-mileage", "-created")
 
         return products.order_by("-created")
+
+
+class ProductDetailAPIView(generics.RetrieveAPIView):
+    queryset = Product.objects.filter(is_active=True)
+    serializer_class = ProductDetailSerializer
+    lookup_field = "slug"
+
+
+class ProductLikeAPIView(generics.CreateAPIView):
+    serializer_class = ProductLikeSerializer
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        product = get_object_or_404(Product, slug=kwargs["slug"], is_active=True)
+        data = serializer.save(product=product)
+
+        return Response(data, status=status.HTTP_200_OK)
+
+
+class ProductFavoriteAPIView(generics.CreateAPIView):
+    serializer_class = FavoriteSerializer
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        product = get_object_or_404(Product, slug=kwargs["slug"], is_active=True)
+        data = serializer.save(product=product)
+
+        return Response(data, status=status.HTTP_200_OK)
+
+
+class RatingCreateAPIView(generics.CreateAPIView):
+    serializer_class = RatingSerializer
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        product = get_object_or_404(Product, slug=kwargs["slug"], is_active=True)
+        data = serializer.save(product=product)
+
+        return Response(data, status=status.HTTP_200_OK)
