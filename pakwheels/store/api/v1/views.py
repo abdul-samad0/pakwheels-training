@@ -153,6 +153,7 @@ class ProductLikeAPIView(generics.CreateAPIView):
         serializer.is_valid(raise_exception=True)
         product = get_object_or_404(Product, slug=kwargs["slug"], is_active=True)
         data = serializer.save(product=product)
+
         return Response(data, status=status.HTTP_200_OK)
 
 
@@ -164,6 +165,7 @@ class ProductFavoriteAPIView(generics.CreateAPIView):
         serializer.is_valid(raise_exception=True)
         product = get_object_or_404(Product, slug=kwargs["slug"], is_active=True)
         data = serializer.save(product=product)
+
         return Response(data, status=status.HTTP_200_OK)
 
 
@@ -175,4 +177,5 @@ class RatingCreateAPIView(generics.CreateAPIView):
         serializer.is_valid(raise_exception=True)
         product = get_object_or_404(Product, slug=kwargs["slug"], is_active=True)
         data = serializer.save(product=product)
+
         return Response(data, status=status.HTTP_200_OK)
