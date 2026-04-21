@@ -1,7 +1,14 @@
 from django.utils.text import slugify
 from rest_framework import serializers
 
-from pakwheels.store.models import Category, Product, Like, Favorite, Rating
+from pakwheels.store.models import (
+    Category,
+    Product,
+    ProductImage,
+    Like,
+    Favorite,
+    Rating,
+)
 from pakwheels.store.utils import make_unique_slug
 
 
@@ -17,11 +24,13 @@ class CategorySerializer(serializers.ModelSerializer):
         if value and Category.objects.filter(slug=value).exists():
             raise serializers.ValidationError(
                 "Category with this slug already exists.")
+
         return value
 
     def create(self, validated_data):
         provided_slug = validated_data.pop("slug", "")
         if provided_slug:
+
             return Category.objects.create(**validated_data, slug=provided_slug)
 
         else:
@@ -29,6 +38,7 @@ class CategorySerializer(serializers.ModelSerializer):
             base_slug = slugify(name) or "category"
             slug = make_unique_slug(base_slug, Category)
             validated_data["slug"] = slug
+
             return Category.objects.create(**validated_data)
 
 
@@ -67,6 +77,7 @@ class ProductCreateSerializer(serializers.ModelSerializer):
         base_slug = slugify(product.title) or "product"
         product.slug = make_unique_slug(base_slug, Product)
         product.save()
+
         return product
 
 
@@ -102,23 +113,29 @@ class ProductListSerializer(serializers.ModelSerializer):
         )
 
 
+class ProductImageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ProductImage
+        fields = ("id", "image")
+        read_only_fields = ("id", "image")
+
+
 class ProductDetailSerializer(serializers.ModelSerializer):
     category = serializers.StringRelatedField()
     model_name = serializers.CharField(source="model.name", read_only=True)
     make_name = serializers.CharField(source="model.make", read_only=True)
     seller_email = serializers.EmailField(
         source="seller.email", read_only=True)
-    images = serializers.SerializerMethodField()
+    images = ProductImageSerializer(many=True, read_only=True)
     like_count = serializers.SerializerMethodField()
     favorite_count = serializers.SerializerMethodField()
 
-    def get_images(self, obj):
-        return [image.image.url for image in obj.images.all()]
-
     def get_like_count(self, obj):
+
         return Like.objects.filter(product=obj).count()
 
     def get_favorite_count(self, obj):
+
         return Favorite.objects.filter(product=obj).count()
 
     class Meta:
@@ -150,9 +167,8 @@ class ProductDetailSerializer(serializers.ModelSerializer):
         )
 
 
-class LikeSerializer(serializers.ModelSerializer):
-    product = serializers.SlugRelatedField(
-        slug_field="slug", queryset=Product.objects.filter(is_active=True))
+class ProductLikeSerializer(serializers.ModelSerializer):
+    product = serializers.SlugRelatedField(slug_field="slug", read_only=True)
     user = serializers.HiddenField(default=serializers.CurrentUserDefault())
     validators = []  # disable unique_together pre-validation for toggle
 
@@ -174,6 +190,7 @@ class LikeSerializer(serializers.ModelSerializer):
             is_liked = True
 
         like_count = Like.objects.filter(product=product).count()
+
         return {
             "product_id": product.id,
             "is_liked": is_liked,
@@ -183,8 +200,7 @@ class LikeSerializer(serializers.ModelSerializer):
 
 
 class FavoriteSerializer(serializers.ModelSerializer):
-    product = serializers.SlugRelatedField(
-        slug_field="slug", queryset=Product.objects.filter(is_active=True))
+    product = serializers.SlugRelatedField(slug_field="slug", read_only=True)
     user = serializers.HiddenField(default=serializers.CurrentUserDefault())
     validators = []  # disable unique_together pre-validation for toggle
 
@@ -206,6 +222,7 @@ class FavoriteSerializer(serializers.ModelSerializer):
             is_favorited = True
 
         favorite_count = Favorite.objects.filter(product=product).count()
+
         return {
             "product_id": product.id,
             "is_favorited": is_favorited,
@@ -215,8 +232,7 @@ class FavoriteSerializer(serializers.ModelSerializer):
 
 
 class RatingSerializer(serializers.ModelSerializer):
-    product = serializers.SlugRelatedField(
-        slug_field="slug", queryset=Product.objects.filter(is_active=True))
+    product = serializers.SlugRelatedField(slug_field="slug", read_only=True)
     user = serializers.HiddenField(default=serializers.CurrentUserDefault())
     validators = []
 
@@ -236,4 +252,5 @@ class RatingSerializer(serializers.ModelSerializer):
             rating.save()
         else:
             Rating.objects.create(product=product, user=user, score=score)
+
         return rating
